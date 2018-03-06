@@ -81,6 +81,9 @@ private Q_SLOTS:
   void updateAlpha();
   void updateRobotDescription();
 
+  void update_center_of_mass_visible();
+  void update_center_of_mass_marker_scale();
+
 protected:
   /** @brief Loads a URDF from the ros-param named by our
    * "Robot Description" property, iterates through the links, and
@@ -105,6 +108,9 @@ protected:
   StringProperty* robot_description_property_;
   FloatProperty* alpha_property_;
   StringProperty* tf_prefix_property_;
+
+  Property* center_of_mass_property_;                         /// < Sets visibility of links' CoMs
+  FloatProperty* center_of_mass_marker_scale_property_;       /// < Sets scale of CoMs' markers
 };
 
 } // namespace rviz

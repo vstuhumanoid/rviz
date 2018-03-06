@@ -141,6 +141,10 @@ void RobotLinkSelectionHandler::preRenderPass(uint32_t pass)
     {
       link_->axes_->getSceneNode()->setVisible( false );
     }
+    if( link_->center_of_mass_node_)
+    {
+      link_->center_of_mass_node_->setVisible( false );
+    }
   }
 }
 
@@ -157,7 +161,8 @@ RobotLink::RobotLink( Robot* robot,
                       const urdf::LinkConstSharedPtr& link,
                       const std::string& parent_joint_name,
                       bool visual,
-                      bool collision)
+                      bool collision,
+                      bool center_of_mass)
 : robot_( robot )
 , scene_manager_( robot->getDisplayContext()->getSceneManager() )
 , context_( robot->getDisplayContext() )
@@ -167,6 +172,7 @@ RobotLink::RobotLink( Robot* robot,
 , collision_node_( NULL )
 , trail_( NULL )
 , axes_( NULL )
+, center_of_mass_shape_( NULL )
 , material_alpha_( 1.0 )
 , robot_alpha_(1.0)
 , only_render_depth_(false)
@@ -202,8 +208,10 @@ RobotLink::RobotLink( Robot* robot,
 
   link_property_->collapse();
 
+
   visual_node_ = robot_->getVisualNode()->createChildSceneNode();
   collision_node_ = robot_->getCollisionNode()->createChildSceneNode();
+  center_of_mass_node_ = robot->getOtherNode()->createChildSceneNode();
 
   // create material for coloring links
   std::stringstream ss;
@@ -223,6 +231,11 @@ RobotLink::RobotLink( Robot* robot,
   if ( collision )
   {
     createCollision( link );
+  }
+
+  if( center_of_mass)
+  {
+    createCoM(link);
   }
 
   if (collision || visual)
@@ -312,8 +325,13 @@ RobotLink::~RobotLink()
     scene_manager_->destroyEntity( collision_meshes_[ i ]);
   }
 
+  if(center_of_mass_shape_)
+    delete center_of_mass_shape_;
+
   scene_manager_->destroySceneNode( visual_node_ );
   scene_manager_->destroySceneNode( collision_node_ );
+  scene_manager_->destroySceneNode( center_of_mass_node_ );
+
 
   if ( trail_ )
   {
@@ -439,7 +457,12 @@ void RobotLink::updateVisibility()
   {
     axes_->getSceneNode()->setVisible( enabled && robot_->isVisible() );
   }
+  if( center_of_mass_node_ )
+  {
+    center_of_mass_node_->setVisible(enabled && robot_->isVisible() && robot_->isCentersOfMassVisible());
+  }
 }
+
 
 Ogre::MaterialPtr RobotLink::getMaterialForLink( const urdf::LinkConstSharedPtr& link, const std::string material_name)
 {
@@ -782,6 +805,8 @@ void RobotLink::createVisual(const urdf::LinkConstSharedPtr& link )
   visual_node_->setVisible( getEnabled() );
 }
 
+
+
 void RobotLink::createSelection()
 {
   selection_handler_.reset( new RobotLinkSelectionHandler( this, context_ ));
@@ -870,6 +895,12 @@ void RobotLink::setTransforms( const Ogre::Vector3& visual_position, const Ogre:
   {
     collision_node_->setPosition( collision_position );
     collision_node_->setOrientation( collision_orientation );
+  }
+
+  if( center_of_mass_node_ )
+  {
+    center_of_mass_node_->setPosition( visual_position );
+    center_of_mass_node_->setOrientation( visual_orientation );
   }
 
   position_property_->setVector( visual_position );
@@ -1022,6 +1053,38 @@ void RobotLink::expandDetails(bool expand)
   else
   {
     parent->collapse();
+  }
+}
+
+
+
+
+void RobotLink::createCoM(const urdf::LinkConstSharedPtr &link)
+{
+  if(link->inertial)
+  {
+    urdf::Pose pose = link->inertial->origin;
+    Ogre::Vector3 translate(pose.position.x, pose.position.y, pose.position.z);
+    Ogre::SceneNode* offset_node = center_of_mass_node_->createChildSceneNode(translate);
+    center_of_mass_shape_ = new Shape(Shape::Sphere, scene_manager_, offset_node);
+
+    //TODO: set color from UI
+    center_of_mass_shape_->setColor(1,0,0,1);
+    updateCenterOfMassMarkerSize();
+  }
+}
+
+void RobotLink::setCenterOfMassMarkerScale(float scale)
+{
+  center_of_mass_marker_scale_ = scale;
+  updateCenterOfMassMarkerSize();
+}
+
+void RobotLink::updateCenterOfMassMarkerSize()
+{
+  if(center_of_mass_shape_)
+  {
+    center_of_mass_shape_->setScale(Ogre::Vector3(center_of_mass_marker_scale_, center_of_mass_marker_scale_, center_of_mass_marker_scale_));
   }
 }
 

@@ -164,6 +164,7 @@ void Robot::setCollisionVisible( bool visible )
   updateLinkVisibilities();
 }
 
+
 void Robot::updateLinkVisibilities()
 {
   M_NameToLink::iterator it = links_.begin();
@@ -174,6 +175,7 @@ void Robot::updateLinkVisibilities()
     link->updateVisibility();
   }
 }
+
 
 bool Robot::isVisible()
 {
@@ -190,6 +192,7 @@ bool Robot::isCollisionVisible()
   return collision_visible_;
 }
 
+
 void Robot::setAlpha(float a)
 {
   alpha_ = a;
@@ -203,6 +206,7 @@ void Robot::setAlpha(float a)
     link->setRobotAlpha(alpha_);
   }
 }
+
 
 void Robot::clear()
 {
@@ -239,9 +243,10 @@ RobotLink* Robot::LinkFactory::createLink(
     const urdf::LinkConstSharedPtr& link,
     const std::string& parent_joint_name,
     bool visual,
-    bool collision)
+    bool collision,
+    bool center_of_mass)
 {
-  return new RobotLink(robot, link, parent_joint_name, visual, collision);
+  return new RobotLink(robot, link, parent_joint_name, visual, collision, center_of_mass);
 }
 
 RobotJoint* Robot::LinkFactory::createJoint(
@@ -251,7 +256,7 @@ RobotJoint* Robot::LinkFactory::createJoint(
   return new RobotJoint(robot, joint);
 }
 
-void Robot::load( const urdf::ModelInterface &urdf, bool visual, bool collision )
+void Robot::load( const urdf::ModelInterface &urdf, bool visual, bool collision, bool center_of_mass )
 {
   link_tree_->hide(); // hide until loaded
   robot_loaded_ = false;
@@ -282,7 +287,8 @@ void Robot::load( const urdf::ModelInterface &urdf, bool visual, bool collision 
                                                    urdf_link,
                                                    parent_joint_name,
                                                    visual,
-                                                   collision );
+                                                   collision,
+                                                   center_of_mass);
 
       if (urdf_link == urdf.getRoot())
       {
@@ -325,6 +331,8 @@ void Robot::load( const urdf::ModelInterface &urdf, bool visual, bool collision 
 
   setVisualVisible( isVisualVisible() );
   setCollisionVisible( isCollisionVisible() );
+  setCentersOfMassVisible( isCentersOfMassVisible() );
+  setCenterOfMassMarkerScale(getCenterOfMassMarkerScale());
 }
 
 void Robot::unparentLinkProperties()
@@ -736,6 +744,7 @@ void Robot::update(const LinkUpdater& updater)
     link->setToNormalMaterial();
 
     Ogre::Vector3 visual_position, collision_position;
+    Ogre::Vector3 com_position;
     Ogre::Quaternion visual_orientation, collision_orientation;
     if( updater.getLinkTransforms( link->getName(),
                                    visual_position, visual_orientation,
@@ -825,6 +834,37 @@ const Ogre::Vector3& Robot::getPosition()
 const Ogre::Quaternion& Robot::getOrientation()
 {
   return root_visual_node_->getOrientation();
+}
+
+
+void Robot::setCentersOfMassVisible( bool visible)
+{
+  centers_of_mass_visible_ = visible;
+  updateLinkVisibilities();
+}
+
+void Robot::setCenterOfMassMarkerScale(float scale)
+{
+  center_of_mass_marker_scale_ = scale;
+
+  M_NameToLink::iterator it = links_.begin();
+  M_NameToLink::iterator end = links_.end();
+  for ( ; it != end; ++it )
+  {
+    RobotLink* link = it->second;
+
+    link->setCenterOfMassMarkerScale(center_of_mass_marker_scale_);
+  }
+}
+
+float Robot::getCenterOfMassMarkerScale()
+{
+  return center_of_mass_marker_scale_;
+}
+
+bool Robot::isCentersOfMassVisible()
+{
+  return centers_of_mass_visible_;
 }
 
 } // namespace rviz

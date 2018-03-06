@@ -88,6 +88,19 @@ RobotModelDisplay::RobotModelDisplay()
                                             "Robot Model normally assumes the link name is the same as the tf frame name. "
                                             " This option allows you to set a prefix.  Mainly useful for multi-robot situations.",
                                             this, SLOT( updateTfPrefix() ));
+
+  // Links' center of mass display
+  center_of_mass_property_ = new Property("Center of mass", true,
+                                          "Whether to display centers of mass of each part. Set link alpha less then 1.0",
+                                          this, SLOT(update_center_of_mass_visible()), this);
+
+  center_of_mass_marker_scale_property_ = new FloatProperty("Marker scale", 0.03,
+                                                            "Center of mass marker scale",
+                                                            center_of_mass_property_,
+                                                            SLOT(update_center_of_mass_marker_scale()), this);
+
+
+  center_of_mass_property_->collapse();
 }
 
 RobotModelDisplay::~RobotModelDisplay()
@@ -105,6 +118,8 @@ void RobotModelDisplay::onInitialize()
   updateVisualVisible();
   updateCollisionVisible();
   updateAlpha();
+  update_center_of_mass_visible();
+  update_center_of_mass_marker_scale();
 }
 
 void RobotModelDisplay::updateAlpha()
@@ -133,6 +148,7 @@ void RobotModelDisplay::updateCollisionVisible()
   robot_->setCollisionVisible( collision_enabled_property_->getValue().toBool() );
   context_->queueRender();
 }
+
 
 void RobotModelDisplay::updateTfPrefix()
 {
@@ -244,6 +260,20 @@ void RobotModelDisplay::reset()
 {
   Display::reset();
   has_new_transforms_ = true;
+}
+
+
+
+void RobotModelDisplay::update_center_of_mass_visible()
+{
+  robot_->setCentersOfMassVisible( center_of_mass_property_->getValue().toBool() );
+  context_->queueRender();
+}
+
+void RobotModelDisplay::update_center_of_mass_marker_scale()
+{
+  robot_->setCenterOfMassMarkerScale(center_of_mass_marker_scale_property_->getFloat());
+  context_->queueRender();
 }
 
 } // namespace rviz

@@ -84,12 +84,14 @@ typedef boost::shared_ptr<RobotLinkSelectionHandler> RobotLinkSelectionHandlerPt
 class RobotLink: public QObject
 {
 Q_OBJECT
+
 public:
   RobotLink( Robot* robot,
              const urdf::LinkConstSharedPtr& link,
              const std::string& parent_joint_name,
              bool visual,
-             bool collision);
+             bool collision,
+             bool center_of_mas);
   virtual ~RobotLink();
 
   virtual void setRobotAlpha(float a);
@@ -140,6 +142,12 @@ public:
   // expand all sub properties
   void expandDetails(bool expand);
 
+  /**
+   * Set scale of the center of mass marker
+   * @param scale scale of the marker
+   */
+  void setCenterOfMassMarkerScale(float scale);
+
 public Q_SLOTS:
   /** @brief Update the visibility of the link elements: visual mesh, collision mesh, trail, and axes.
    *
@@ -162,6 +170,8 @@ private:
   void createSelection();
   Ogre::MaterialPtr getMaterialForLink( const urdf::LinkConstSharedPtr& link, const std::string material_name = "" );
 
+  void createCoM(const urdf::LinkConstSharedPtr &link);
+  void updateCenterOfMassMarkerSize();
 
 protected:
   Robot* robot_;
@@ -172,7 +182,7 @@ protected:
   std::string parent_joint_name_;
   std::vector<std::string> child_joint_names_;
 
-  
+
 
   // properties
   Property* link_property_;
@@ -194,6 +204,13 @@ private:
 
   Ogre::SceneNode* visual_node_;              ///< The scene node the visual meshes are attached to
   Ogre::SceneNode* collision_node_;           ///< The scene node the collision meshes are attached to
+
+
+  Shape* center_of_mass_shape_;               ///< The shape representing the center of mass
+  Ogre::SceneNode* center_of_mass_node_;      ///< The scene node the CoM marker is attached to
+  float center_of_mass_marker_scale_;          ///< Scale of the center of mass marker
+
+
 
   Ogre::RibbonTrail* trail_;
 

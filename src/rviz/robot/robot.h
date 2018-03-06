@@ -94,8 +94,12 @@ public:
    * @param urdf The robot description to read from
    * @param visual Whether or not to load the visual representation
    * @param collision Whether or not to load the collision representation
+   * @param center_of_mass Whether or not to load the links' centers of mass
    */
-  virtual void load( const urdf::ModelInterface &urdf, bool visual = true, bool collision = true );
+  virtual void load( const urdf::ModelInterface &urdf,
+                     bool visual = true,
+                     bool collision = true,
+                     bool center_of_mass = true );
 
   /**
    * \brief Clears all data loaded from a URDF
@@ -122,6 +126,7 @@ public:
    */
   void setCollisionVisible( bool visible );
 
+
   /**
    * \brief Returns whether anything is visible
    */
@@ -139,6 +144,34 @@ public:
 
   void setAlpha(float a);
   float getAlpha() { return alpha_; }
+
+
+
+  /**
+   * \brief Set wheter the centers of mass of each part is visible
+   * @param visible Wheter the centers of mass of each link is visible
+   */
+  void setCentersOfMassVisible(bool visible);
+
+  /**
+   * \brief Set center of mass marker scale
+   * @param scale center of mass marker scale
+   */
+  void setCenterOfMassMarkerScale(float scale);
+
+  /**
+   * \brief return center of mass marker scale
+   */
+  float getCenterOfMassMarkerScale();
+
+  /**
+   * \brief Returns whether or not centers of mass of each link is visible.
+   * To be visible this and isVisible() must both be true
+   */
+  bool isCentersOfMassVisible();
+
+
+
 
   RobotLink* getRootLink() { return root_link_; }
   RobotLink* getLink( const std::string& name );
@@ -171,7 +204,8 @@ public:
                                    const urdf::LinkConstSharedPtr& link,
                                    const std::string& parent_joint_name,
                                    bool visual,
-                                   bool collision);
+                                   bool collision,
+                                   bool center_of_mass);
     virtual RobotJoint* createJoint( Robot* robot,
                                      const urdf::JointConstSharedPtr& joint);
   };
@@ -255,6 +289,10 @@ protected:
   bool visible_;                                ///< Should we show anything at all? (affects visual, collision, axes, and trails)
   bool visual_visible_;                         ///< Should we show the visual representation?
   bool collision_visible_;                      ///< Should we show the collision representation?
+
+
+  bool centers_of_mass_visible_;                ///< Should we show centers of mass of each link?
+  float center_of_mass_marker_scale_;           ///< Scale of the center of mass markers
 
   DisplayContext* context_;
   Property* link_tree_;
